@@ -98,31 +98,40 @@ function PrismUI:AddTab(window, tabName)
     local Page = Instance.new("ScrollingFrame", window.PageHolder)
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
-    Page.Visible = false
     Page.ScrollBarThickness = 6
     Page.CanvasSize = UDim2.new(0,0,0,0)
+    Page.Visible = false -- hide by default
 
     local Layout = Instance.new("UIListLayout", Page)
-    Layout.Padding = UDim.new(0,6)
+    Layout.Padding = UDim.new(0,10)
+    Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    -- Tab switching logic
-    TabButton.MouseButton1Click:Connect(function()
-        for _, child in ipairs(window.PageHolder:GetChildren()) do
-            if child:IsA("ScrollingFrame") then
-                child.Visible = false
+    -- Tab click logic
+    local function selectTab()
+        -- hide all pages
+        for _, p in ipairs(window.PageHolder:GetChildren()) do
+            if p:IsA("ScrollingFrame") then
+                p.Visible = false
             end
         end
         Page.Visible = true
 
-        -- Highlight selected tab
+        -- reset all buttons
         for _, btn in ipairs(window.TabHolder:GetChildren()) do
             if btn:IsA("TextButton") then
                 btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
             end
         end
         TabButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
-    end)
+    end
+
+    TabButton.MouseButton1Click:Connect(selectTab)
+
+    -- Auto-show first tab
+    if #window.TabHolder:GetChildren() == 1 then
+        selectTab()
+    end
 
     return Page
 end
