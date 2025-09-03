@@ -1,27 +1,67 @@
--- 🌟 Full Custom UI Library for Prism Hub
+-- 🌟 PrismUI v2 — Custom UI Library for Prism Hub
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 local PrismUI = {}
 
+-- Helper function: make a frame draggable
+local function makeDraggable(frame)
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            mousePos = input.Position
+            framePos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            frame.Position = framePos + UDim2.new(0, delta.X, 0, delta.Y)
+        end
+    end)
+end
+
 -- Create main window
 function PrismUI:CreateWindow(titleText)
-    local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+    local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "PrismHubUI"
+    ScreenGui.ResetOnSpawn = false
+
+    -- Parent correctly for Studio or exploit
+    pcall(function() ScreenGui.Parent = game.CoreGui end)
+    if not ScreenGui.Parent then
+        ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    end
 
     local Main = Instance.new("Frame", ScreenGui)
     Main.Size = UDim2.new(0, 500, 0, 300)
     Main.Position = UDim2.new(0.5, -250, 0.5, -150)
     Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    Main.Active = true
-    Main.Draggable = true
+    Main.BorderSizePixel = 0
+    makeDraggable(Main)
 
     local Title = Instance.new("TextLabel", Main)
     Title.Size = UDim2.new(1, 0, 0, 30)
     Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     Title.Text = "🔮 " .. titleText
-    Title.TextColor3 = Color3.fromRGB(255,255,255)
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.Font = Enum.Font.SourceSansBold
     Title.TextSize = 18
 
@@ -52,14 +92,21 @@ function PrismUI:AddTab(window, tabName)
     TabButton.Text = tabName
     TabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     TabButton.TextColor3 = Color3.fromRGB(255,255,255)
+    TabButton.Font = Enum.Font.SourceSans
+    TabButton.TextSize = 16
 
     local Page = Instance.new("ScrollingFrame", window.PageHolder)
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
     Page.Visible = false
-    Page.CanvasSize = UDim2.new(0,0,0,600) -- scrollable
     Page.ScrollBarThickness = 6
+    Page.CanvasSize = UDim2.new(0,0,0,0)
 
+    local Layout = Instance.new("UIListLayout", Page)
+    Layout.Padding = UDim.new(0,6)
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    -- Tab switching logic
     TabButton.MouseButton1Click:Connect(function()
         for _, child in ipairs(window.PageHolder:GetChildren()) do
             if child:IsA("ScrollingFrame") then
@@ -67,6 +114,14 @@ function PrismUI:AddTab(window, tabName)
             end
         end
         Page.Visible = true
+
+        -- Highlight selected tab
+        for _, btn in ipairs(window.TabHolder:GetChildren()) do
+            if btn:IsA("TextButton") then
+                btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+            end
+        end
+        TabButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
     end)
 
     return Page
@@ -79,6 +134,17 @@ function PrismUI:AddButton(page, text, callback)
     Button.Text = text
     Button.BackgroundColor3 = Color3.fromRGB(60, 120, 60)
     Button.TextColor3 = Color3.fromRGB(255,255,255)
+    Button.Font = Enum.Font.SourceSans
+    Button.TextSize = 16
+    Button.AutoButtonColor = true
+
+    -- Hover effect
+    Button.MouseEnter:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 150, 80)}):Play()
+    end)
+    Button.MouseLeave:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 120, 60)}):Play()
+    end)
 
     Button.MouseButton1Click:Connect(callback)
 end
@@ -88,126 +154,42 @@ function PrismUI:AddLabel(page, text)
     local Label = Instance.new("TextLabel", page)
     Label.Size = UDim2.new(0, 200, 0, 30)
     Label.Text = text
-    Label.BackgroundTransparency = 1
     Label.TextColor3 = Color3.fromRGB(255,255,255)
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    return Label
+    Label.BackgroundTransparency = 1
+    Label.Font = Enum.Font.SourceSans
+    Label.TextSize = 16
 end
 
 -- Add a toggle
 function PrismUI:AddToggle(page, text, default, callback)
-    local Toggle = Instance.new("TextButton", page)
-    Toggle.Size = UDim2.new(0, 200, 0, 40)
-    Toggle.Text = text .. (default and " ✅" or " ❌")
-    Toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
-    Toggle.TextColor3 = Color3.fromRGB(255,255,255)
+    local ToggleFrame = Instance.new("Frame", page)
+    ToggleFrame.Size = UDim2.new(0,200,0,40)
+    ToggleFrame.BackgroundTransparency = 1
+
+    local ToggleLabel = Instance.new("TextLabel", ToggleFrame)
+    ToggleLabel.Size = UDim2.new(0.7,0,1,0)
+    ToggleLabel.Text = text
+    ToggleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    ToggleLabel.BackgroundTransparency = 1
+    ToggleLabel.Font = Enum.Font.SourceSans
+    ToggleLabel.TextSize = 16
+    ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local ToggleButton = Instance.new("TextButton", ToggleFrame)
+    ToggleButton.Size = UDim2.new(0.3,0,1,0)
+    ToggleButton.Position = UDim2.new(0.7,0,0,0)
+    ToggleButton.BackgroundColor3 = default and Color3.fromRGB(60,120,60) or Color3.fromRGB(120,60,60)
+    ToggleButton.Text = default and "ON" or "OFF"
+    ToggleButton.TextColor3 = Color3.fromRGB(255,255,255)
+    ToggleButton.Font = Enum.Font.SourceSans
+    ToggleButton.TextSize = 16
 
     local state = default
-    Toggle.MouseButton1Click:Connect(function()
+    ToggleButton.MouseButton1Click:Connect(function()
         state = not state
-        Toggle.Text = text .. (state and " ✅" or " ❌")
+        ToggleButton.Text = state and "ON" or "OFF"
+        TweenService:Create(ToggleButton, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(60,120,60) or Color3.fromRGB(120,60,60)}):Play()
         callback(state)
-    end)
-end
-
--- Add a slider
-function PrismUI:AddSlider(page, text, min, max, default, callback)
-    local Frame = Instance.new("Frame", page)
-    Frame.Size = UDim2.new(0, 200, 0, 40)
-    Frame.BackgroundColor3 = Color3.fromRGB(50,50,50)
-
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Size = UDim2.new(1, 0, 0.5, 0)
-    Label.Text = text .. ": " .. default
-    Label.BackgroundTransparency = 1
-    Label.TextColor3 = Color3.fromRGB(255,255,255)
-
-    local Slider = Instance.new("TextButton", Frame)
-    Slider.Size = UDim2.new(1, 0, 0.5, 0)
-    Slider.Position = UDim2.new(0, 0, 0.5, 0)
-    Slider.BackgroundColor3 = Color3.fromRGB(100,100,100)
-    Slider.Text = "Drag"
-
-    local dragging = false
-    Slider.MouseButton1Down:Connect(function() dragging = true end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-
-    Slider.MouseMoved:Connect(function(x,y)
-        if dragging then
-            local percent = math.clamp((x - Slider.AbsolutePosition.X) / Slider.AbsoluteSize.X, 0, 1)
-            local value = math.floor(min + (max - min) * percent)
-            Label.Text = text .. ": " .. value
-            callback(value)
-        end
-    end)
-end
-
--- Add a textbox
-function PrismUI:AddTextBox(page, placeholder, callback)
-    local TextBox = Instance.new("TextBox", page)
-    TextBox.Size = UDim2.new(0, 200, 0, 40)
-    TextBox.PlaceholderText = placeholder
-    TextBox.Text = ""
-    TextBox.BackgroundColor3 = Color3.fromRGB(60,60,60)
-    TextBox.TextColor3 = Color3.fromRGB(255,255,255)
-
-    TextBox.FocusLost:Connect(function(enter)
-        if enter then
-            callback(TextBox.Text)
-        end
-    end)
-end
-
--- Add a dropdown
-function PrismUI:AddDropdown(page, text, options, callback)
-    local Dropdown = Instance.new("TextButton", page)
-    Dropdown.Size = UDim2.new(0, 200, 0, 40)
-    Dropdown.Text = text .. " ▼"
-    Dropdown.BackgroundColor3 = Color3.fromRGB(70,70,100)
-    Dropdown.TextColor3 = Color3.fromRGB(255,255,255)
-
-    local ListFrame = Instance.new("Frame", page)
-    ListFrame.Size = UDim2.new(0, 200, 0, #options*30)
-    ListFrame.Visible = false
-    ListFrame.BackgroundColor3 = Color3.fromRGB(40,40,40)
-
-    for i, opt in ipairs(options) do
-        local Btn = Instance.new("TextButton", ListFrame)
-        Btn.Size = UDim2.new(1, 0, 0, 30)
-        Btn.Position = UDim2.new(0, 0, 0, (i-1)*30)
-        Btn.Text = opt
-        Btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-        Btn.TextColor3 = Color3.fromRGB(255,255,255)
-        Btn.MouseButton1Click:Connect(function()
-            Dropdown.Text = text .. ": " .. opt
-            ListFrame.Visible = false
-            callback(opt)
-        end)
-    end
-
-    Dropdown.MouseButton1Click:Connect(function()
-        ListFrame.Visible = not ListFrame.Visible
-    end)
-end
-
--- Notification system
-function PrismUI:Notify(text, duration)
-    local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-    local Msg = Instance.new("TextLabel", ScreenGui)
-    Msg.Size = UDim2.new(0, 200, 0, 50)
-    Msg.Position = UDim2.new(0.5, -100, 0, 50)
-    Msg.BackgroundColor3 = Color3.fromRGB(0,0,0)
-    Msg.TextColor3 = Color3.fromRGB(255,255,255)
-    Msg.Text = text
-    Msg.TextScaled = true
-    Msg.BackgroundTransparency = 0.3
-
-    task.delay(duration or 2, function()
-        ScreenGui:Destroy()
     end)
 end
 
