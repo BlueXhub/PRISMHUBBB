@@ -1,4 +1,4 @@
--- 🌟 Custom UI Library for Prism Hub
+-- 🌟 Full Custom UI Library for Prism Hub
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -57,6 +57,8 @@ function PrismUI:AddTab(window, tabName)
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
     Page.Visible = false
+    Page.CanvasSize = UDim2.new(0,0,0,600) -- scrollable
+    Page.ScrollBarThickness = 6
 
     TabButton.MouseButton1Click:Connect(function()
         for _, child in ipairs(window.PageHolder:GetChildren()) do
@@ -79,6 +81,134 @@ function PrismUI:AddButton(page, text, callback)
     Button.TextColor3 = Color3.fromRGB(255,255,255)
 
     Button.MouseButton1Click:Connect(callback)
+end
+
+-- Add a label
+function PrismUI:AddLabel(page, text)
+    local Label = Instance.new("TextLabel", page)
+    Label.Size = UDim2.new(0, 200, 0, 30)
+    Label.Text = text
+    Label.BackgroundTransparency = 1
+    Label.TextColor3 = Color3.fromRGB(255,255,255)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    return Label
+end
+
+-- Add a toggle
+function PrismUI:AddToggle(page, text, default, callback)
+    local Toggle = Instance.new("TextButton", page)
+    Toggle.Size = UDim2.new(0, 200, 0, 40)
+    Toggle.Text = text .. (default and " ✅" or " ❌")
+    Toggle.BackgroundColor3 = Color3.fromRGB(80, 80, 120)
+    Toggle.TextColor3 = Color3.fromRGB(255,255,255)
+
+    local state = default
+    Toggle.MouseButton1Click:Connect(function()
+        state = not state
+        Toggle.Text = text .. (state and " ✅" or " ❌")
+        callback(state)
+    end)
+end
+
+-- Add a slider
+function PrismUI:AddSlider(page, text, min, max, default, callback)
+    local Frame = Instance.new("Frame", page)
+    Frame.Size = UDim2.new(0, 200, 0, 40)
+    Frame.BackgroundColor3 = Color3.fromRGB(50,50,50)
+
+    local Label = Instance.new("TextLabel", Frame)
+    Label.Size = UDim2.new(1, 0, 0.5, 0)
+    Label.Text = text .. ": " .. default
+    Label.BackgroundTransparency = 1
+    Label.TextColor3 = Color3.fromRGB(255,255,255)
+
+    local Slider = Instance.new("TextButton", Frame)
+    Slider.Size = UDim2.new(1, 0, 0.5, 0)
+    Slider.Position = UDim2.new(0, 0, 0.5, 0)
+    Slider.BackgroundColor3 = Color3.fromRGB(100,100,100)
+    Slider.Text = "Drag"
+
+    local dragging = false
+    Slider.MouseButton1Down:Connect(function() dragging = true end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    Slider.MouseMoved:Connect(function(x,y)
+        if dragging then
+            local percent = math.clamp((x - Slider.AbsolutePosition.X) / Slider.AbsoluteSize.X, 0, 1)
+            local value = math.floor(min + (max - min) * percent)
+            Label.Text = text .. ": " .. value
+            callback(value)
+        end
+    end)
+end
+
+-- Add a textbox
+function PrismUI:AddTextBox(page, placeholder, callback)
+    local TextBox = Instance.new("TextBox", page)
+    TextBox.Size = UDim2.new(0, 200, 0, 40)
+    TextBox.PlaceholderText = placeholder
+    TextBox.Text = ""
+    TextBox.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    TextBox.TextColor3 = Color3.fromRGB(255,255,255)
+
+    TextBox.FocusLost:Connect(function(enter)
+        if enter then
+            callback(TextBox.Text)
+        end
+    end)
+end
+
+-- Add a dropdown
+function PrismUI:AddDropdown(page, text, options, callback)
+    local Dropdown = Instance.new("TextButton", page)
+    Dropdown.Size = UDim2.new(0, 200, 0, 40)
+    Dropdown.Text = text .. " ▼"
+    Dropdown.BackgroundColor3 = Color3.fromRGB(70,70,100)
+    Dropdown.TextColor3 = Color3.fromRGB(255,255,255)
+
+    local ListFrame = Instance.new("Frame", page)
+    ListFrame.Size = UDim2.new(0, 200, 0, #options*30)
+    ListFrame.Visible = false
+    ListFrame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+
+    for i, opt in ipairs(options) do
+        local Btn = Instance.new("TextButton", ListFrame)
+        Btn.Size = UDim2.new(1, 0, 0, 30)
+        Btn.Position = UDim2.new(0, 0, 0, (i-1)*30)
+        Btn.Text = opt
+        Btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+        Btn.TextColor3 = Color3.fromRGB(255,255,255)
+        Btn.MouseButton1Click:Connect(function()
+            Dropdown.Text = text .. ": " .. opt
+            ListFrame.Visible = false
+            callback(opt)
+        end)
+    end
+
+    Dropdown.MouseButton1Click:Connect(function()
+        ListFrame.Visible = not ListFrame.Visible
+    end)
+end
+
+-- Notification system
+function PrismUI:Notify(text, duration)
+    local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+    local Msg = Instance.new("TextLabel", ScreenGui)
+    Msg.Size = UDim2.new(0, 200, 0, 50)
+    Msg.Position = UDim2.new(0.5, -100, 0, 50)
+    Msg.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    Msg.TextColor3 = Color3.fromRGB(255,255,255)
+    Msg.Text = text
+    Msg.TextScaled = true
+    Msg.BackgroundTransparency = 0.3
+
+    task.delay(duration or 2, function()
+        ScreenGui:Destroy()
+    end)
 end
 
 return PrismUI
