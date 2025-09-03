@@ -1,4 +1,4 @@
--- 🌟 PrismUI v2 — Custom UI Library for Prism Hub
+-- 🌟 PrismUI v3 — Custom UI Library for Prism Hub (Auto-show, Centered, Close Button)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -6,7 +6,7 @@ local TweenService = game:GetService("TweenService")
 
 local PrismUI = {}
 
--- Helper function: make a frame draggable
+-- Helper: make a frame draggable
 local function makeDraggable(frame)
     local dragging = false
     local dragInput, mousePos, framePos
@@ -38,21 +38,20 @@ local function makeDraggable(frame)
     end)
 end
 
--- Create main window
+-- Create main window (auto-show page)
 function PrismUI:CreateWindow(titleText)
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "PrismHubUI"
     ScreenGui.ResetOnSpawn = false
 
-    -- Parent correctly for Studio or exploit
     pcall(function() ScreenGui.Parent = game.CoreGui end)
     if not ScreenGui.Parent then
         ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     end
 
     local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 500, 0, 300)
-    Main.Position = UDim2.new(0.5, -250, 0.5, -150)
+    Main.Size = UDim2.new(0, 500, 0, 400)
+    Main.Position = UDim2.new(0.5, -250, 0.5, -200)
     Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     Main.BorderSizePixel = 0
     makeDraggable(Main)
@@ -65,66 +64,36 @@ function PrismUI:CreateWindow(titleText)
     Title.Font = Enum.Font.SourceSansBold
     Title.TextSize = 18
 
-    -- Tab holder
-    local TabHolder = Instance.new("Frame", Main)
-    TabHolder.Size = UDim2.new(0, 120, 1, -30)
-    TabHolder.Position = UDim2.new(0, 0, 0, 30)
-    TabHolder.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    local CloseButton = Instance.new("TextButton", Main)
+    CloseButton.Size = UDim2.new(0, 30, 0, 30)
+    CloseButton.Position = UDim2.new(1, -35, 0, 0)
+    CloseButton.Text = "✖"
+    CloseButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+    CloseButton.TextColor3 = Color3.fromRGB(255,255,255)
+    CloseButton.Font = Enum.Font.SourceSansBold
+    CloseButton.TextSize = 18
+    CloseButton.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
 
-    -- Page holder
-    local PageHolder = Instance.new("Frame", Main)
-    PageHolder.Size = UDim2.new(1, -120, 1, -30)
-    PageHolder.Position = UDim2.new(0, 120, 0, 30)
-    PageHolder.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-
-    return {
-        ScreenGui = ScreenGui,
-        Main = Main,
-        TabHolder = TabHolder,
-        PageHolder = PageHolder
-    }
-end
-
--- Add a tab
-function PrismUI:AddTab(window, tabName)
-    local TabButton = Instance.new("TextButton", window.TabHolder)
-    TabButton.Size = UDim2.new(1, 0, 0, 30)
-    TabButton.Text = tabName
-    TabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    TabButton.TextColor3 = Color3.fromRGB(255,255,255)
-    TabButton.Font = Enum.Font.SourceSans
-    TabButton.TextSize = 16
-
-    local Page = Instance.new("ScrollingFrame", window.PageHolder)
-    Page.Size = UDim2.new(1, 0, 1, 0)
+    -- Main page
+    local Page = Instance.new("ScrollingFrame", Main)
+    Page.Size = UDim2.new(1, 0, 1, -30)
+    Page.Position = UDim2.new(0, 0, 0, 30)
     Page.BackgroundTransparency = 1
-    Page.Visible = false
     Page.ScrollBarThickness = 6
     Page.CanvasSize = UDim2.new(0,0,0,0)
 
     local Layout = Instance.new("UIListLayout", Page)
-    Layout.Padding = UDim.new(0,6)
+    Layout.Padding = UDim.new(0,10)
+    Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    -- Tab switching logic
-    TabButton.MouseButton1Click:Connect(function()
-        for _, child in ipairs(window.PageHolder:GetChildren()) do
-            if child:IsA("ScrollingFrame") then
-                child.Visible = false
-            end
-        end
-        Page.Visible = true
-
-        -- Highlight selected tab
-        for _, btn in ipairs(window.TabHolder:GetChildren()) do
-            if btn:IsA("TextButton") then
-                btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-            end
-        end
-        TabButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
-    end)
-
-    return Page
+    return {
+        ScreenGui = ScreenGui,
+        Main = Main,
+        Page = Page
+    }
 end
 
 -- Add a button
@@ -190,6 +159,36 @@ function PrismUI:AddToggle(page, text, default, callback)
         ToggleButton.Text = state and "ON" or "OFF"
         TweenService:Create(ToggleButton, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(60,120,60) or Color3.fromRGB(120,60,60)}):Play()
         callback(state)
+    end)
+end
+
+-- Add a clipboard button
+function PrismUI:AddClipboardButton(page, text, content)
+    local Button = Instance.new("TextButton", page)
+    Button.Size = UDim2.new(0, 200, 0, 40)
+    Button.Text = text
+    Button.BackgroundColor3 = Color3.fromRGB(60, 120, 60)
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Font = Enum.Font.SourceSans
+    Button.TextSize = 16
+    Button.AutoButtonColor = true
+
+    Button.MouseEnter:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80,150,80)}):Play()
+    end)
+    Button.MouseLeave:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60,120,60)}):Play()
+    end)
+
+    Button.MouseButton1Click:Connect(function()
+        local success, err = pcall(function()
+            setclipboard(content)
+        end)
+        if success then
+            print("✅ Clipboard set!")
+        else
+            warn("❌ Failed to set clipboard: "..tostring(err))
+        end
     end)
 end
 
