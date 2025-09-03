@@ -5,6 +5,37 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
 local PrismUI = {}
+-- Add clipboard button
+function PrismUI:AddClipboardButton(page, text, content)
+    local Button = Instance.new("TextButton", page)
+    Button.Size = UDim2.new(0, 200, 0, 40)
+    Button.Text = text
+    Button.BackgroundColor3 = Color3.fromRGB(60, 120, 60)
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Font = Enum.Font.SourceSans
+    Button.TextSize = 16
+    Button.AutoButtonColor = true
+
+    -- Hover effect
+    Button.MouseEnter:Connect(function()
+        game:GetService("TweenService"):Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80,150,80)}):Play()
+    end)
+    Button.MouseLeave:Connect(function()
+        game:GetService("TweenService"):Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60,120,60)}):Play()
+    end)
+
+    -- Clipboard functionality
+    Button.MouseButton1Click:Connect(function()
+        local success, err = pcall(function()
+            setclipboard(content) -- most executors support setclipboard
+        end)
+        if success then
+            print("✅ Clipboard set!")
+        else
+            warn("❌ Failed to set clipboard: "..tostring(err))
+        end
+    end)
+end
 
 -- Helper function: make a frame draggable
 local function makeDraggable(frame)
@@ -192,5 +223,38 @@ function PrismUI:AddToggle(page, text, default, callback)
         callback(state)
     end)
 end
+
+-- Add clipboard button
+function PrismUI:AddClipboardButton(page, text, content)
+    local Button = Instance.new("TextButton", page)
+    Button.Size = UDim2.new(0, 200, 0, 40)
+    Button.Text = text
+    Button.BackgroundColor3 = Color3.fromRGB(60, 120, 60)
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Font = Enum.Font.SourceSans
+    Button.TextSize = 16
+    Button.AutoButtonColor = true
+
+    -- Hover effect
+    Button.MouseEnter:Connect(function()
+        game:GetService("TweenService"):Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80,150,80)}):Play()
+    end)
+    Button.MouseLeave:Connect(function()
+        game:GetService("TweenService"):Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60,120,60)}):Play()
+    end)
+
+    -- Clipboard functionality
+    Button.MouseButton1Click:Connect(function()
+        local success, err = pcall(function()
+            setclipboard(content) -- most executors support setclipboard
+        end)
+        if success then
+            print("✅ Clipboard set!")
+        else
+            warn("❌ Failed to set clipboard: "..tostring(err))
+        end
+    end)
+end
+
 
 return PrismUI
