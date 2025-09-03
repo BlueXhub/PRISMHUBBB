@@ -1,4 +1,4 @@
--- 🌟 PrismUI v2 — Custom UI Library for Prism Hub
+-- 🌟 PrismUI v3 — Executor-Friendly Hub UI
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -6,7 +6,7 @@ local TweenService = game:GetService("TweenService")
 
 local PrismUI = {}
 
--- Helper function: make a frame draggable
+-- Helper: Draggable frame
 local function makeDraggable(frame)
     local dragging = false
     local dragInput, mousePos, framePos
@@ -44,8 +44,10 @@ function PrismUI:CreateWindow(titleText)
     ScreenGui.Name = "PrismHubUI"
     ScreenGui.ResetOnSpawn = false
 
-    -- Parent correctly for Studio or exploit
-    pcall(function() ScreenGui.Parent = game.CoreGui end)
+    -- Parent safely
+    pcall(function()
+        ScreenGui.Parent = game:GetService("CoreGui")
+    end)
     if not ScreenGui.Parent then
         ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
     end
@@ -57,6 +59,7 @@ function PrismUI:CreateWindow(titleText)
     Main.BorderSizePixel = 0
     makeDraggable(Main)
 
+    -- Title
     local Title = Instance.new("TextLabel", Main)
     Title.Size = UDim2.new(1, 0, 0, 30)
     Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -64,6 +67,19 @@ function PrismUI:CreateWindow(titleText)
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.Font = Enum.Font.SourceSansBold
     Title.TextSize = 18
+
+    -- Close button
+    local CloseBtn = Instance.new("TextButton", Main)
+    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+    CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(120,40,40)
+    CloseBtn.Text = "X"
+    CloseBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    CloseBtn.Font = Enum.Font.SourceSansBold
+    CloseBtn.TextSize = 18
+    CloseBtn.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
 
     -- Tab holder
     local TabHolder = Instance.new("Frame", Main)
@@ -85,7 +101,7 @@ function PrismUI:CreateWindow(titleText)
     }
 end
 
--- Add a tab
+-- Add tab
 function PrismUI:AddTab(window, tabName)
     local TabButton = Instance.new("TextButton", window.TabHolder)
     TabButton.Size = UDim2.new(1, 0, 0, 30)
@@ -96,7 +112,7 @@ function PrismUI:AddTab(window, tabName)
     TabButton.TextSize = 16
 
     local Page = Instance.new("ScrollingFrame", window.PageHolder)
-    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.Size = UDim2.new(1,0,1,0)
     Page.BackgroundTransparency = 1
     Page.Visible = false
     Page.ScrollBarThickness = 6
@@ -106,7 +122,7 @@ function PrismUI:AddTab(window, tabName)
     Layout.Padding = UDim.new(0,6)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    -- Tab switching logic
+    -- Tab click
     TabButton.MouseButton1Click:Connect(function()
         for _, child in ipairs(window.PageHolder:GetChildren()) do
             if child:IsA("ScrollingFrame") then
@@ -115,7 +131,7 @@ function PrismUI:AddTab(window, tabName)
         end
         Page.Visible = true
 
-        -- Highlight selected tab
+        -- Highlight tab
         for _, btn in ipairs(window.TabHolder:GetChildren()) do
             if btn:IsA("TextButton") then
                 btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
@@ -127,12 +143,12 @@ function PrismUI:AddTab(window, tabName)
     return Page
 end
 
--- Add a button
+-- Add button
 function PrismUI:AddButton(page, text, callback)
     local Button = Instance.new("TextButton", page)
-    Button.Size = UDim2.new(0, 200, 0, 40)
+    Button.Size = UDim2.new(0,200,0,40)
     Button.Text = text
-    Button.BackgroundColor3 = Color3.fromRGB(60, 120, 60)
+    Button.BackgroundColor3 = Color3.fromRGB(60,120,60)
     Button.TextColor3 = Color3.fromRGB(255,255,255)
     Button.Font = Enum.Font.SourceSans
     Button.TextSize = 16
@@ -140,19 +156,19 @@ function PrismUI:AddButton(page, text, callback)
 
     -- Hover effect
     Button.MouseEnter:Connect(function()
-        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 150, 80)}):Play()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80,150,80)}):Play()
     end)
     Button.MouseLeave:Connect(function()
-        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 120, 60)}):Play()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60,120,60)}):Play()
     end)
 
     Button.MouseButton1Click:Connect(callback)
 end
 
--- Add a label
+-- Add label
 function PrismUI:AddLabel(page, text)
     local Label = Instance.new("TextLabel", page)
-    Label.Size = UDim2.new(0, 200, 0, 30)
+    Label.Size = UDim2.new(0,200,0,30)
     Label.Text = text
     Label.TextColor3 = Color3.fromRGB(255,255,255)
     Label.BackgroundTransparency = 1
@@ -160,7 +176,7 @@ function PrismUI:AddLabel(page, text)
     Label.TextSize = 16
 end
 
--- Add a toggle
+-- Add toggle
 function PrismUI:AddToggle(page, text, default, callback)
     local ToggleFrame = Instance.new("Frame", page)
     ToggleFrame.Size = UDim2.new(0,200,0,40)
