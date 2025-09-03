@@ -1,0 +1,84 @@
+-- 🌟 Custom UI Library for Prism Hub
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+
+local PrismUI = {}
+
+-- Create main window
+function PrismUI:CreateWindow(titleText)
+    local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+    ScreenGui.Name = "PrismHubUI"
+
+    local Main = Instance.new("Frame", ScreenGui)
+    Main.Size = UDim2.new(0, 500, 0, 300)
+    Main.Position = UDim2.new(0.5, -250, 0.5, -150)
+    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Main.Active = true
+    Main.Draggable = true
+
+    local Title = Instance.new("TextLabel", Main)
+    Title.Size = UDim2.new(1, 0, 0, 30)
+    Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Title.Text = "🔮 " .. titleText
+    Title.TextColor3 = Color3.fromRGB(255,255,255)
+    Title.Font = Enum.Font.SourceSansBold
+    Title.TextSize = 18
+
+    -- Tab holder
+    local TabHolder = Instance.new("Frame", Main)
+    TabHolder.Size = UDim2.new(0, 120, 1, -30)
+    TabHolder.Position = UDim2.new(0, 0, 0, 30)
+    TabHolder.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+
+    -- Page holder
+    local PageHolder = Instance.new("Frame", Main)
+    PageHolder.Size = UDim2.new(1, -120, 1, -30)
+    PageHolder.Position = UDim2.new(0, 120, 0, 30)
+    PageHolder.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+
+    return {
+        ScreenGui = ScreenGui,
+        Main = Main,
+        TabHolder = TabHolder,
+        PageHolder = PageHolder
+    }
+end
+
+-- Add a tab
+function PrismUI:AddTab(window, tabName)
+    local TabButton = Instance.new("TextButton", window.TabHolder)
+    TabButton.Size = UDim2.new(1, 0, 0, 30)
+    TabButton.Text = tabName
+    TabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    TabButton.TextColor3 = Color3.fromRGB(255,255,255)
+
+    local Page = Instance.new("ScrollingFrame", window.PageHolder)
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.Visible = false
+
+    TabButton.MouseButton1Click:Connect(function()
+        for _, child in ipairs(window.PageHolder:GetChildren()) do
+            if child:IsA("ScrollingFrame") then
+                child.Visible = false
+            end
+        end
+        Page.Visible = true
+    end)
+
+    return Page
+end
+
+-- Add a button
+function PrismUI:AddButton(page, text, callback)
+    local Button = Instance.new("TextButton", page)
+    Button.Size = UDim2.new(0, 200, 0, 40)
+    Button.Text = text
+    Button.BackgroundColor3 = Color3.fromRGB(60, 120, 60)
+    Button.TextColor3 = Color3.fromRGB(255,255,255)
+
+    Button.MouseButton1Click:Connect(callback)
+end
+
+return PrismUI
